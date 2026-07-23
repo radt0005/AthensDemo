@@ -1,0 +1,32 @@
+id: AthensDemo.GB_est
+version: 0.1.0
+kind: standard
+network: true
+
+description: >
+  Query the FIADB database using the GB_est function from the
+  FIADB.diRect package. Returns a summary table as an RDS file.
+
+entrypoint: GB_est
+
+inputs:
+  EVAL_GRP:
+    type: string
+    description: >
+      Comma-separated list of EVAL_GRP identifiers, one per state
+      (e.g. "512017, 372017")
+  ATTRIBUTE_NBR:
+    type: number
+    description: Attribute number (up to 6-digit positive integer)
+  GRP_BY_ATTRIB:
+    type: string
+    description: >
+      Comma-separated list of column names to group results by
+      (e.g. "STATECD" or "STATECD, COUNTYCD")
+
+outputs:
+  result:
+    type: file
+    format: rds
+    description: Summary table returned by GB_est as an RDS file
+

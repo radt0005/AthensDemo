@@ -1,0 +1,35 @@
+name: GB_est-pipeline
+version: "1.0"
+description: Query FIA GB_est and reformat result.
+
+blocks:
+  - id: "@GB_est"
+    name: AthensDemo.GB_est
+    inputs: []
+    args:
+      # NOTE: reformat_fia is only tested/scoped for a single EVAL_GRP.
+      # GB_est.R's parsing logic accepts comma-separated multi-state input,
+      # but the underlying FIAapi::GB_api() call errors on more than one
+      # EVAL_GRP value (parse_url: length(url) == 1 is not TRUE) - so in
+      # practice only single-state EVAL_GRP works right now.
+      EVAL_GRP: "512021"
+      ATTRIBUTE_NBR: 10
+      GRP_BY_ATTRIB: "STATECD, COUNTYCD"
+
+  - id: "@unit_ref"
+    name: data.read
+    inputs: []
+    args:
+      uri: "/home/pradtke/source/AthensDemo/ref/STATE_UNIT_COUNTY.csv"
+      format: CSV
+
+  - id: "@reformat"
+    name: AthensDemo.reformat_fia
+    inputs:
+      - block: "@GB_est"
+        output: "result"
+        as: "gb_est_result"
+      - block: "@unit_ref"
+        output: "file"
+        as: "unit_ref"
+    args: {}

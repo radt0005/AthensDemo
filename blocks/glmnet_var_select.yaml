@@ -1,0 +1,39 @@
+id: AthensDemo.glmnet_var_select
+version: 0.1.0
+kind: standard
+network: false
+
+description: >
+  Reads the combined FIA-estimates/GFCHM parquet table and performs
+  glmnet-based (ridge/lasso/elastic-net) variable selection using the
+  GFCHM height-bin area fractions (FRAC_HT*) as candidate predictors of
+  a chosen FIA direct estimate column. Produces a single diagnostic PDF
+  showing a lambda.min/lambda.1se coefficient comparison table across a
+  grid of alpha values, plus cross-validated MSE curves and coefficient
+  path plots for each alpha, as an alternative to all-possible-subsets
+  regression for identifying informative canopy-height predictors.
+
+entrypoint: glmnet_var_select
+
+inputs:
+  joined_data:
+    type: file
+    format: Parquet
+    description: Combined FIA estimates + GFCHM height-bin parquet table (e.g. output of base.reduce_stack in Join_FIA_GFCHM-pipeline.yaml).
+  response:
+    type: string
+    description: Column name in joined_data to use as the response variable (e.g. ESTIMATE).
+  alphas:
+    type: string
+    description: Comma-separated glmnet alpha values to fit and compare (0 = ridge, 1 = lasso).
+  seed:
+    type: number
+    description: Random seed for reproducible cross-validation fold assignment.
+
+outputs:
+  result:
+    type: file
+    format: PDF
+    description: >
+      Diagnostic report: lambda.min/lambda.1se coefficient table across
+      alphas, CV-MSE curves, and coefficient path plots for each alpha.

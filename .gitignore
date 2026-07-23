@@ -1,0 +1,14 @@
+data
+*.RDS
+ref/
+*.bak
+*.old
+**/*.Rc
+**/block.schema.json
+repro-map-cache-bug.yaml
+log.txt
+r_log.txt
+*.lock
+*.lock.yaml
+*.egg-info/
+*.egg-info/

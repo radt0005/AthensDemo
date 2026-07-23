@@ -1,0 +1,97 @@
+name: FIA_GFCHM_diag
+version: "1.0"
+description: Adds a diagnostic block to generate some intermediate outputs
+      following  the combining of FIA and GFCHM county-level data.
+
+blocks:
+  - id: "@GB_est"
+    name: AthensDemo.GB_est
+    inputs: []
+    args:
+      # NOTE: reformat_fia is only tested/scoped for a single EVAL_GRP.
+      # GB_est.R's parsing logic accepts comma-separated multi-state input,
+      # but the underlying FIAapi::GB_api() call errors on more than one
+      # EVAL_GRP value (parse_url: length(url) == 1 is not TRUE) - so in
+      # practice only single-state EVAL_GRP works right now.
+      EVAL_GRP: "512021"
+      ATTRIBUTE_NBR: 10
+      GRP_BY_ATTRIB: "STATECD, COUNTYCD"
+
+  - id: "@unit_ref"
+    name: data.read
+    inputs: []
+    args:
+      uri: "/home/pradtke/source/AthensDemo/ref/STATE_UNIT_COUNTY.csv"
+      format: CSV
+
+  - id: "@reformat"
+    name: AthensDemo.reformat_fia
+    inputs:
+      - block: "@GB_est"
+        output: "result"
+        as: "gb_est_result"
+      - block: "@unit_ref"
+        output: "file"
+        as: "unit_ref"
+    args: {}
+
+  - id: "@gfchm_files"
+    name: data.read_collection
+    inputs: []
+    args:
+      uri: "/home/pradtke/source/AthensDemo/ref/*aea.tif"
+      format: "GeoTIFF"
+      max_items: 0
+
+  - id: "@fan_out"
+    name: base.map_files
+    inputs:
+      - block: "@gfchm_files"
+        output: "files"
+
+  - id: "@state_ref"
+    name: data.read
+    inputs: []
+    args:
+      uri: "/home/pradtke/source/AthensDemo/ref/STATES.csv"
+      format: CSV
+
+  - id: "@county_ref"
+    name: data.read
+    inputs: []
+    args:
+      uri: "/home/pradtke/source/AthensDemo/ref/COUNTY.csv"
+      format: CSV
+
+  - id: "@chm_stats"
+    name: AthensDemo.join_chm_stats
+    inputs:
+      - "@fan_out"
+      - block: "@reformat"
+        output: "result"
+        as: "fia_data"
+      - block: "@state_ref"
+        output: "file"
+        as: "state_file"
+      - block: "@county_ref"
+        output: "file"
+        as: "county_file"
+    args:
+      state_abbrev: "VA"
+
+  - id: "@combined"
+    name: base.reduce_stack
+    inputs:
+      - "@chm_stats"
+    args:
+      strict: false
+
+  - id: "@diagnostics"
+    name: AthensDemo.fia_gfchm_diagnostics
+    inputs:
+      - block: "@combined"
+        output: "result"
+        as: "joined_data"
+    args:
+      id_cols: "STATECD,COUNTYCD,CO_FIPS,COUNTYNM,STATEAB,STATENAME,UNITCD,UNITNM,EVAL_GRP,ATTRIBUTE_NBR"
+      fia_cols: ""

@@ -1,0 +1,44 @@
+id: AthensDemo.fia_gfchm_diagnostics
+version: 0.1.0
+kind: standard
+network: false
+
+description: >
+  Reads the combined FIA-estimates/GFCHM parquet table (output of the
+  Join_FIA_GFCHM pipeline's reduce step) and produces a single diagnostic
+  PDF: a Pearson correlation matrix (as both a printed table and a
+  heatmap) between FIA county-level estimate columns and GFCHM height-bin
+  area-fraction columns (FRAC_HT*), plus a grid of per-pair scatterplots
+  with fitted trend lines, to visually confirm correlative relationships
+  between the two variable groups.
+
+entrypoint: fia_gfchm_diagnostics
+
+inputs:
+  joined_data:
+    type: file
+    format: Parquet
+    description: Combined FIA estimates + GFCHM height-bin parquet table (e.g. output of base.reduce_stack in Join_FIA_GFCHM-pipeline.yaml).
+  id_cols:
+    type: string
+    description: >
+      Comma-separated column names to exclude from analysis as
+      identifiers/geography rather than measured attributes. Any names
+      not present in joined_data are ignored. Defaults to the standard
+      STATECD/COUNTYCD/CO_FIPS/COUNTYNM/STATEAB/STATENAME/UNITCD/UNITNM/
+      EVAL_GRP/ATTRIBUTE_NBR set.
+  fia_cols:
+    type: string
+    description: >
+      Optional comma-separated list of FIA estimate column names to
+      analyze. If empty (default), auto-detected as all numeric columns
+      except id_cols and any column matching ^FRAC_HT.
+
+outputs:
+  result:
+    type: file
+    format: PDF
+    description: >
+      Diagnostic report: correlation matrix table, correlation heatmap,
+      and FIA-estimate x GFCHM-height-bin scatterplot grid with trend
+      lines.

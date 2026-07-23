@@ -1,0 +1,33 @@
+# blocks/reformat_fia.yaml
+id: AthensDemo.reformat_fia
+version: 0.1.2   # was 0.1.0
+kind: standard
+network: false
+
+description: >
+  Reformats GB_est output for joining to remote sensing data.
+  Selects relevant columns, constructs co_fips (STATECD * 1000 + COUNTYCD),
+  and joins survey unit (UNITCD) from a reference CSV.
+
+  Note: Virginia independent cities are not given separate FIA estimates.
+  FIA county maps fuse independent cities into adjacent counties. All
+  joins to remote sensing data should use FIA county boundaries rather
+  than Census/TIGER boundaries to maintain consistency.
+
+entrypoint: reformat_fia
+
+inputs:
+  gb_est_result:
+    type: file
+    format: rds
+    description: RDS file output from the GB_est block
+  unit_ref:
+    type: file
+    format: CSV
+    description: State/unit/county lookup table used to join FIA codes
+
+outputs:
+  result:
+    type: file
+    format: rds
+    description: Reformatted FIA estimates with CO_FIPS and UNITCD
