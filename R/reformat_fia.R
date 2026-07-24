@@ -2,7 +2,7 @@
 # Reformats GB_est output: selects columns, constructs CO_FIPS,
 # joins UNITCD from reference CSV.
 
-library(spade)
+library(spadelib)
 library(dplyr)
 
 handler <- function(gb_est_result,
