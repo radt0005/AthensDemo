@@ -1,8 +1,9 @@
 Package: AthensDemo
 Title: Spade AthensDemo block collection
-Version: 0.1.2
+Version: 0.1.3
 Imports:
     spadelib
+    FIAapi
 Remotes:
     spadelib=github::krbundy/spadelib-cran
 Encoding: UTF-8
