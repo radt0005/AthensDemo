@@ -1,7 +1,7 @@
 # Block: glmnet_var_select
 
 message("Loading package libraries...\n")
-library(spade)
+library(spadelib)
 library(arrow)
 library(dplyr)
 library(glmnet)

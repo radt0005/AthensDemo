@@ -1,7 +1,7 @@
 # Block: fia_gfchm_diagnostics
 
 message("Loading package libraries...\n")
-library(spade)
+library(spadelib)
 library(arrow)
 library(dplyr)
 

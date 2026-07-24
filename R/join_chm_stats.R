@@ -4,7 +4,7 @@
 Sys.setenv(ARROW_USER_SIMD_LEVEL = "AVX2")
 
 message("Loading package libraries...\n")
-library(spade)
+library(spadelib)
 library(terra)
 library(sf)
 library(exactextractr)
