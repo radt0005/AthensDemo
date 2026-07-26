@@ -4,7 +4,12 @@ Version: 0.1.5
 Imports:
     spadelib,
     FIAapi,
-    dplyr
+    dplyr,
+    terra,
+    sf,
+    exactextractr,
+    tidyr,
+    arrow
 Remotes:
     spadelib=github::krbundy/spadelib-cran,
     FIAapi=github::radt0005/FIAapi

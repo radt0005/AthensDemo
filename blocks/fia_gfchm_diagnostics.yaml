@@ -8,7 +8,7 @@ description: >
   Join_FIA_GFCHM pipeline's reduce step) and produces a single diagnostic
   PDF: a Pearson correlation matrix (as both a printed table and a
   heatmap) between FIA county-level estimate columns and GFCHM height-bin
-  area-fraction columns (FRAC_HT*), plus a grid of per-pair scatterplots
+  area columns (HT*), plus a grid of per-pair scatterplots
   with fitted trend lines, to visually confirm correlative relationships
   between the two variable groups.
 
@@ -32,7 +32,7 @@ inputs:
     description: >
       Optional comma-separated list of FIA estimate column names to
       analyze. If empty (default), auto-detected as all numeric columns
-      except id_cols and any column matching ^FRAC_HT.
+      except id_cols and any column matching ^HT.
 
 outputs:
   result:
