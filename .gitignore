@@ -2,6 +2,10 @@ data
 *.RDS
 *.pdf
 *.patch
+# Ignore generated CSVs
+*.csv
+#PERM Track reference CSVs
+!PERM/**/*.csv
 ref/
 *.bak
 *.old

@@ -1,0 +1,127 @@
+name: FH_SAE-pipeline
+version: "1.0"
+description: >
+  Full pipeline: query FIA GB_est, join to GFCHM canopy-height stats per
+  county, run glmnet-based variable selection diagnostics, then fit a
+  Fay-Herriot small area model (fh_sae) producing county EBLUPs, RMSEs,
+  and standard-error-ratio (SER) precision comparisons vs. the FIA
+  direct estimates.
+
+blocks:
+  - id: "@GB_est"
+    name: AthensDemo.GB_est
+    inputs: []
+    args:
+      # NOTE: reformat_fia is only tested/scoped for a single EVAL_GRP.
+      # GB_est.R's parsing logic accepts comma-separated multi-state input,
+      # but the underlying FIAapi::GB_api() call errors on more than one
+      # EVAL_GRP value (parse_url: length(url) == 1 is not TRUE) - so in
+      # practice only single-state EVAL_GRP works right now.
+      EVAL_GRP: "512021"
+      ATTRIBUTE_NBR: 10
+      GRP_BY_ATTRIB: "STATECD, COUNTYCD"
+
+  - id: "@unit_ref"
+    name: data.read
+    inputs: []
+    args:
+      uri: "/home/pradtke/source/AthensDemo/ref/STATE_UNIT_COUNTY.csv"
+      format: CSV
+
+  - id: "@reformat"
+    name: AthensDemo.reformat_fia
+    inputs:
+      - block: "@GB_est"
+        output: "result"
+        as: "gb_est_result"
+      - block: "@unit_ref"
+        output: "file"
+        as: "unit_ref"
+    args: {}
+
+  - id: "@gfchm_files"
+    name: data.read_collection
+    inputs: []
+    args:
+      uri: "/home/pradtke/source/AthensDemo/ref/*aea.tif"
+      format: "GeoTIFF"
+      max_items: 0
+
+  - id: "@fan_out"
+    name: base.map_files
+    inputs:
+      - block: "@gfchm_files"
+        output: "files"
+
+  - id: "@state_ref"
+    name: data.read
+    inputs: []
+    args:
+      uri: "/home/pradtke/source/AthensDemo/ref/STATES.csv"
+      format: CSV
+
+  - id: "@county_ref"
+    name: data.read
+    inputs: []
+    args:
+      uri: "/home/pradtke/source/AthensDemo/ref/COUNTY.csv"
+      format: CSV
+
+  - id: "@chm_stats"
+    name: AthensDemo.join_chm_stats
+    inputs:
+      - "@fan_out"
+      - block: "@reformat"
+        output: "result"
+        as: "fia_data"
+      - block: "@state_ref"
+        output: "file"
+        as: "state_file"
+      - block: "@county_ref"
+        output: "file"
+        as: "county_file"
+    args:
+      state_abbrev: "VA"
+
+  - id: "@combined"
+    name: base.reduce_stack
+    inputs:
+      - "@chm_stats"
+    args:
+      strict: false
+
+  - id: "@glmnet_select"
+    name: AthensDemo.glmnet_var_select
+    inputs:
+      - block: "@combined"
+        output: "result"
+        as: "joined_data"
+    args:
+      response: "ESTIMATE"
+      alphas: "0,0.25,0.5,0.75,1"
+      seed: 42
+
+  # NOTE: @fh_sae reads joined_data straight from @combined, not from
+  # @glmnet_select's output -- glmnet_var_select only produces a PDF
+  # diagnostic, not a machine-readable predictor list, so the two blocks
+  # aren't wired together automatically. The `predictors` arg below is a
+  # placeholder based on the one real glmnet run referenced in
+  # spade-philscode-status-3.md (stable predictors: HT0, HT20, HT25,
+  # HT30, HT35, with HT25/HT30/HT35 dominant); review @glmnet_select's
+  # diagnostic PDF for the current data/run and update this arg by hand
+  # before treating @fh_sae's results as final.
+  - id: "@fh_sae"
+    name: AthensDemo.fh_sae
+    inputs:
+      - block: "@combined"
+        output: "result"
+        as: "joined_data"
+    args:
+      response: "ESTIMATE"
+      variance: "VARIANCE"
+      predictors: "HT20,HT25,HT30,HT35"
+      id_cols: "STATECD,UNITCD,UNITNM,COUNTYCD,CO_FIPS,COUNTY_NAME"
+      fia_se_col: "SE"
+      fia_plot_count_col: "PLOT_COUNT"
+      fia_nonzero_plot_col: "NON_ZERO_PLOTS"
+      method: "REML"

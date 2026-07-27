@@ -1,0 +1,63 @@
+id: AthensDemo.fh_sae
+version: 0.1.0
+kind: standard
+network: false
+
+description: >
+  Fits an area-level Fay-Herriot small area model (via sae::mseFH()) to
+  produce county EBLUPs and their RMSEs from FIA direct estimates/
+  variances plus GFCHM canopy-height-bin predictors (e.g. the HT* bins
+  glmnet_var_select identifies as stable). Produces a combined results
+  table (FIA direct stats + FH EBLUP/RMSE + standard-error-ratio) as
+  CSV, and a diagnostic PDF with model summary, SER precision summary,
+  and EBLUP-vs-direct / RMSE%-vs-SE% scatterplots.
+
+entrypoint: fh_sae
+
+inputs:
+  joined_data:
+    type: file
+    format: Parquet
+    description: Combined FIA estimates + GFCHM height-bin parquet table (e.g. output of base.reduce_stack in Join_FIA_GFCHM-pipeline.yaml).
+  response:
+    type: string
+    description: Column name in joined_data holding the FIA direct estimate (e.g. ESTIMATE).
+  variance:
+    type: string
+    description: Column name in joined_data holding the FIA direct estimate's variance (e.g. VARIANCE).
+  predictors:
+    type: string
+    description: Comma-separated predictor column names for the Fay-Herriot model (e.g. HT20,HT25,HT30,HT35). Review glmnet_var_select's diagnostic PDF before setting this -- it is not wired to glmnet's output automatically.
+  id_cols:
+    type: string
+    description: Comma-separated identifier/context columns from joined_data to carry through into the results table (e.g. STATECD,UNITCD,UNITNM,COUNTYCD,CO_FIPS,COUNTY_NAME).
+  fia_se_col:
+    type: string
+    description: Column name in joined_data holding the FIA direct estimate's standard error (e.g. SE).
+  fia_plot_count_col:
+    type: string
+    description: Column name in joined_data holding the FIA plot count per county (e.g. PLOT_COUNT).
+  fia_nonzero_plot_col:
+    type: string
+    description: Column name in joined_data holding the FIA nonzero-plot count per county (e.g. NON_ZERO_PLOTS -- not currently selected by reformat_fia.R; add it there first if you want this populated).
+  method:
+    type: string
+    description: Variance-component estimation method passed to sae::mseFH() (REML, ML, or FH).
+
+outputs:
+  result:
+    type: file
+    format: PDF
+    description: >
+      Diagnostic report: Fay-Herriot model summary, SER (standard error
+      ratio) precision summary with best/worst-county preview tables,
+      EBLUP-vs-FIA-direct-estimate scatterplot, and RMSE%-vs-SE%
+      (both standardized by the FH EBLUP) scatterplot.
+  table:
+    type: file
+    format: CSV
+    description: >
+      Full per-county results table: FIA direct stats (estimate, SE,
+      SE%, plot count, nonzero plot count), FH EBLUP and RMSE, percent
+      precision columns standardized by the FH EBLUP, and the SER
+      (standard error ratio) column.

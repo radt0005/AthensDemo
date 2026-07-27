@@ -10,7 +10,8 @@ Imports:
     exactextractr,
     tidyr,
     arrow,
-    glmnet
+    glmnet,
+    sae
 Remotes:
     spadelib=github::krbundy/spadelib-cran,
     FIAapi=github::radt0005/FIAapi
