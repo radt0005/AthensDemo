@@ -1,0 +1,79 @@
+id: 019fa045-d638-7bb4-8b83-ddc579495a07
+name: FIA_GFCHM_diag-cloud
+version: "1.0"
+description: Adds a diagnostic block to generate some intermediate outputs
+  following  the combining of FIA and GFCHM county-level data.
+blocks:
+  - id: 019f9feb-311b-7000-a641-3971920ab6e9
+    name: AthensDemo.GB_est
+    inputs: []
+    args:
+      EVAL_GRP: "512021"
+      ATTRIBUTE_NBR: 10
+      GRP_BY_ATTRIB: STATECD, COUNTYCD
+  - id: 019f9feb-311b-7000-a641-41268f4bac6d
+    name: AthensDemo.reformat_fia
+    inputs:
+      - block: 019f9feb-311b-7000-a641-3971920ab6e9
+        output: result
+      - block: 019f9fd3-1ca4-7665-ab0b-37cb41e2e73a
+        output: table
+    args: {}
+  - id: 019f9feb-311b-7000-a641-4c39944d2a99
+    name: base.map_files
+    inputs:
+      - block: 019f9fe2-8a85-7665-ab0b-8bc170baeec8
+        output: files
+    args: {}
+  - id: 019f9feb-311b-7000-a641-631d6927603d
+    name: AthensDemo.join_chm_stats
+    inputs:
+      - 019f9feb-311b-7000-a641-4c39944d2a99
+      - block: 019f9feb-311b-7000-a641-41268f4bac6d
+        output: result
+      - block: 019f9ff9-7614-7665-ab0c-95deaaf18796
+        output: table
+      - block: 019f9ff9-9623-7665-ab0c-abe67e8ff156
+        output: table
+    args:
+      state_abbrev: VA
+  - id: 019f9feb-311b-7000-a641-6f366b70dbdb
+    name: base.reduce_stack
+    inputs:
+      - 019f9feb-311b-7000-a641-631d6927603d
+    args:
+      strict: false
+  - id: 019f9feb-311b-7000-a641-77f9c9bccf1b
+    name: AthensDemo.fia_gfchm_diagnostics
+    inputs:
+      - block: 019f9feb-311b-7000-a641-6f366b70dbdb
+        output: result
+    args:
+      id_cols: STATECD,COUNTYCD,CO_FIPS,COUNTYNM,STATEAB,STATENAME,UNITCD,UNITNM,EVAL_GRP,ATTRIBUTE_NBR
+      fia_cols: ""
+  - id: 019f9fd3-1ca4-7665-ab0b-37cb41e2e73a
+    name: cloud.upload_table
+    inputs: []
+    args:
+      asset_id: 019f9539-b405-7ddd-8336-d2538fe77b14
+      object_key: data/jhkFC5dJH9zsHBZlKMANwpOfPko99dbN/019f9539-b405-7ddd-8336-d2538fe77b14/STATE_UNIT_COUNTY.csv
+  - id: 019f9fe2-8a85-7665-ab0b-8bc170baeec8
+    name: cloud.upload_file_collection
+    inputs: []
+    args:
+      asset_id: 019f9eec-3183-7000-a63c-ed1ed4c756a6
+      object_prefix: data/jhkFC5dJH9zsHBZlKMANwpOfPko99dbN/019f9eec-3183-7000-a63c-ed1ed4c756a6/
+  - id: 019f9ff9-7614-7665-ab0c-95deaaf18796
+    name: cloud.upload_table
+    version: 0.2.0
+    inputs: []
+    args:
+      asset_id: 019f9539-fe14-7ddd-8336-e2d79ac15235
+      object_key: data/jhkFC5dJH9zsHBZlKMANwpOfPko99dbN/019f9539-fe14-7ddd-8336-e2d79ac15235/COUNTY.csv
+  - id: 019f9ff9-9623-7665-ab0c-abe67e8ff156
+    name: cloud.upload_table
+    version: 0.2.0
+    inputs: []
+    args:
+      asset_id: 019f9539-e439-7ddd-8336-d9878a4b2f32
+      object_key: data/jhkFC5dJH9zsHBZlKMANwpOfPko99dbN/019f9539-e439-7ddd-8336-d9878a4b2f32/STATES.csv

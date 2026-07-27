@@ -5,7 +5,7 @@ description: Query FIA GB_est and reformat result.
 blocks:
   - id: "@GB_est"
     name: AthensDemo.GB_est
-    version: "0.1.5"   # match this with the collection versino in DESCRIPTION
+    version: "0.1.6"   # match this with the collection version in DESCRIPTION
     inputs: []
     args:
       # NOTE: reformat_fia is only tested/scoped for a single EVAL_GRP.
@@ -26,7 +26,7 @@ blocks:
 
   - id: "@reformat"
     name: AthensDemo.reformat_fia
-    version: "0.1.5"     # match this with the collection versino in DESCRIPTION
+    version: "0.1.6"     # match this with the collection versino in DESCRIPTION
     inputs:
       - block: "@GB_est"
         output: "result"
