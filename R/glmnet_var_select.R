@@ -186,12 +186,15 @@ handler <- function(joined_data,
     )
   } else if (meaningful_mse_gain && !meaningful_intercept) {
     paste0(
-      "Recommendation: intercept = FALSE is still reasonable. CV-MSE improves ",
-      "slightly with an intercept (", sprintf("%.1f", overall_pct_change_mse),
-      "%), but the fitted intercept is small relative to the response (",
-      sprintf("%.1f", abs(best_true_intercept_pct_mean_y)),
-      "% of the mean) -- the gain is likely noise rather than a real ",
-      "nonzero-intercept relationship."
+      "Recommendation: intercept = FALSE is still reasonable. Best CV-MSE ",
+      "changes by ", sprintf("%.1f", overall_pct_change_mse),
+      "% with an intercept, but the fitted intercept is small relative to ",
+      "the response (", sprintf("%.1f", abs(best_true_intercept_pct_mean_y)),
+      "% of the mean). Because the best-fitting alpha can differ between ",
+      "the two regimes, this headline change may partly reflect that shift ",
+      "rather than a real nonzero-intercept effect -- the small fitted ",
+      "intercept is the more direct evidence that a free intercept isn't ",
+      "needed here."
     )
   } else {
     paste0(

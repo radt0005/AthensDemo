@@ -1,6 +1,7 @@
 data
 *.RDS
 *.pdf
+*.patch
 ref/
 *.bak
 *.old
