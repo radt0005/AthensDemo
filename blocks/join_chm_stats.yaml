@@ -24,7 +24,7 @@ inputs:
   gfchm_file:
     type: file
     format: GeoTIFF
-    description: One county's GFCHM raster (mapped input — one per invocation).
+    description: One county's GFCHM raster (mapped input -  one per invocation).
   state_file:
     type: file
     format: CSV

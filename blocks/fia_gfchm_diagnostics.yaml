@@ -27,12 +27,14 @@ inputs:
       not present in joined_data are ignored. Defaults to the standard
       STATECD/COUNTYCD/CO_FIPS/COUNTYNM/STATEAB/STATENAME/UNITCD/UNITNM/
       EVAL_GRP/ATTRIBUTE_NBR set.
+    default: "STATECD,COUNTYCD,CO_FIPS,COUNTYNM,STATEAB,STATENAME,UNITCD,UNITNM,EVAL_GRP,ATTRIBUTE_NBR"
   fia_cols:
     type: string
     description: >
       Optional comma-separated list of FIA estimate column names to
       analyze. If empty (default), auto-detected as all numeric columns
       except id_cols and any column matching ^HT.
+    default: ""
 
 outputs:
   result:
