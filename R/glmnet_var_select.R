@@ -11,7 +11,9 @@ message("Finished loading package libraries...\n")
 handler <- function(joined_data,
                     response = "ESTIMATE",
                     alphas = "0,0.25,0.5,0.75,1",
-                    seed = 42){
+                    seed = 42,
+                    fia_plot_count_col = "PLOT_COUNT",
+                    min_plot_count = 1){
 
   SPADE = TRUE # set to FALSE to run outside of spade
 
@@ -30,6 +32,25 @@ handler <- function(joined_data,
     x[is.na(x)] <- 0
     x
   })
+
+  # Drop counties with unreliably few FIA field plots behind their direct
+  # estimate (e.g. singleton-plot counties) before they can influence
+  # variable selection. Uses the same fia_plot_count_col/min_plot_count
+  # convention as fh_sae.R so both blocks train/fit on the same county
+  # set when pointed at the same joined_data and threshold.
+  if (fia_plot_count_col %in% names(df)) {
+    n_before <- nrow(df)
+    low_plot <- is.na(df[[fia_plot_count_col]]) | df[[fia_plot_count_col]] <= min_plot_count
+    if (any(low_plot)) {
+      message("Dropping ", sum(low_plot), " of ", n_before, " county row(s) with ",
+              fia_plot_count_col, " <= ", min_plot_count,
+              " (or missing) -- unreliable direct estimates excluded from variable selection.\n")
+      df <- df[!low_plot, , drop = FALSE]
+    }
+  } else {
+    message("Note: '", fia_plot_count_col, "' not found in joined_data -- skipping ",
+            "low-plot-count filter (min_plot_count = ", min_plot_count, " had no effect).\n")
+  }
 
   if (!(response %in% names(df)))
     stop(paste0("response column '", response, "' not found in joined_data"))
@@ -216,7 +237,7 @@ handler <- function(joined_data,
     "glmnet Variable Selection (lambda.min / lambda.1se) - response: ",
     response
   ))
-  # title(paste0("glmnet Variable Selection (lambda.min / lambda.1se) \u2014 response: ", response))
+  # title(paste0("glmnet Variable Selection (lambda.min / lambda.1se) — response: ", response))
   tbl_text <- capture.output(print(round(coef_table, 4)))
   full_p1_text <- paste(c(
     tbl_text,

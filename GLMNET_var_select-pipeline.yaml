@@ -106,3 +106,5 @@ blocks:
       response: "ESTIMATE"
       alphas: "0,0.25,0.5,0.75,1"
       seed: 42
+      fia_plot_count_col: "PLOT_COUNT"
+      min_plot_count: 1

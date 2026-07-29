@@ -24,6 +24,8 @@ handler <- function(joined_data,
                     fia_se_col           = "SE",
                     fia_plot_count_col   = "PLOT_COUNT",
                     fia_nonzero_plot_col = "NON_ZERO_PLOTS",
+                    min_plot_count       = 1,
+                    intercept            = "TRUE",
                     method               = "REML"){
 
   SPADE = TRUE # set to FALSE to run outside of spade
@@ -79,6 +81,31 @@ handler <- function(joined_data,
     }
   }
 
+  # Drop counties with unreliably few FIA field plots behind their direct
+  # estimate (e.g. singleton-plot counties) before fitting the Fay-Herriot
+  # model -- these estimates/variances are the least trustworthy inputs to
+  # mseFH() and shouldn't be allowed to distort the fit. Uses the same
+  # fia_plot_count_col/min_plot_count convention as glmnet_var_select.R;
+  # point both blocks at the same threshold to fit/select on the same
+  # county set. Rows where the column is genuinely absent (all-NA, i.e.
+  # the "optional column not found" case just above) are left alone here --
+  # there's nothing to filter on -- but a present column with per-row NA
+  # plot counts still has those rows dropped, since an unknown plot count
+  # isn't evidence the estimate is reliable.
+  if (!all(is.na(df[[fia_plot_count_col]]))) {
+    n_before <- nrow(df)
+    low_plot <- is.na(df[[fia_plot_count_col]]) | df[[fia_plot_count_col]] <= min_plot_count
+    if (any(low_plot)) {
+      message("Dropping ", sum(low_plot), " of ", n_before, " county row(s) with ",
+              fia_plot_count_col, " <= ", min_plot_count,
+              " (or missing) -- unreliable direct estimates excluded from the FH fit.\n")
+      df <- df[!low_plot, , drop = FALSE]
+    }
+  } else {
+    message("Note: '", fia_plot_count_col, "' not available -- skipping ",
+            "low-plot-count filter (min_plot_count = ", min_plot_count, " had no effect).\n")
+  }
+
   # Fill in zeros for missing predictor values, consistent with
   # glmnet_var_select.R's convention for these HT* columns.
   df[predictor_cols] <- lapply(df[predictor_cols], function(x) {
@@ -93,10 +120,30 @@ handler <- function(joined_data,
   }
 
   n_domains <- nrow(df)
-  message("Fitting Fay-Herriot model for ", n_domains, " counties: ", response,
-          " ~ ", paste(predictor_cols, collapse = " + "), "\n")
 
-  fh_formula <- stats::as.formula(paste(response, "~", paste(predictor_cols, collapse = " + ")))
+  # Parse the intercept flag up front so a bad value (anything as.logical()
+  # can't resolve to TRUE/FALSE) fails loudly here rather than silently
+  # producing an NA-riddled formula downstream.
+  intercept_flag <- as.logical(intercept)
+  if (is.na(intercept_flag))
+    stop("intercept must be \"TRUE\" or \"FALSE\" (got: '", intercept, "').")
+
+  message("Fitting Fay-Herriot model for ", n_domains, " counties: ", response,
+          " ~ ", paste(predictor_cols, collapse = " + "),
+          if (!intercept_flag) " (no intercept)" else "", "\n")
+
+  # intercept = FALSE fits the zero-intercept model (formula ~ predictors - 1),
+  # matching glmnet_var_select.R's intercept = FALSE default/diagnostic --
+  # review that block's diagnostic PDF (page 2, "Intercept Diagnostic") before
+  # setting this. Its recommendation text there is the evidence to act on:
+  # only switch to intercept = TRUE if it flags a meaningful CV-MSE gain
+  # *and* a non-trivial fitted intercept; otherwise the zero-intercept model
+  # (intercept = FALSE) is the one its own diagnostics support.
+  fh_formula <- if (intercept_flag) {
+    stats::as.formula(paste(response, "~", paste(predictor_cols, collapse = " + ")))
+  } else {
+    stats::as.formula(paste(response, "~", paste(predictor_cols, collapse = " + "), "- 1"))
+  }
 
   # mseFH() fits the area-level Fay-Herriot model (via eblupFH() internally)
   # and returns both the EBLUP and its (analytic, Prasad-Rao/Yokum-type)
@@ -105,10 +152,9 @@ handler <- function(joined_data,
   # sae::mseFH()/eblupFH() resolve `vardir` via `deparse(substitute(vardir))`
   # -- i.e. they capture the literal *text* of whatever expression is
   # passed for `vardir`, then re-look that text up as a column name in
-  # `data` (namevar <- deparse(substitute(vardir)); vardir <- data[[namevar]]).
-  # That means passing an expression like `df[[variance]]` fails, because
-  # the literal text "df[[variance]]" isn't a real column name -- it
-  # doesn't matter that the expression *evaluates* to the right vector,
+  # `data`. That means passing an expression like `df[[variance]]` fails,
+  # because the literal text "df[[variance]]" isn't a real column name --
+  # it doesn't matter that the expression *evaluates* to the right vector,
   # since eblupFH() never uses that evaluated value when `data` is
   # supplied. `do.call()` sidesteps this: passing an actual symbol object
   # (`as.symbol(variance)`, e.g. the symbol `VARIANCE`) means the
@@ -211,7 +257,9 @@ handler <- function(joined_data,
   title(paste0("Fay-Herriot EBLUP Model Summary - response: ", response))
   p1_text <- paste(c(
     paste0("Formula: ", deparse(fh_formula)),
-    paste0("Method: ", method, "   Domains (counties): ", n_domains),
+    paste0("Method: ", method, "   Domains (counties): ", n_domains,
+           "   Intercept: ", intercept_flag),
+    paste0("min_plot_count filter: ", fia_plot_count_col, " > ", min_plot_count),
     "",
     "Coefficients:",
     coef_text,
@@ -280,7 +328,11 @@ handler <- function(joined_data,
     "   variance for each county. The coefficients and estimated",
     "   area-level (random-effect) variance describe how much variation",
     "   the predictors explain vs. what's left as area-level noise the",
-    "   model borrows strength across counties to smooth over.",
+    "   model borrows strength across counties to smooth over. The",
+    "   Intercept line records whether this fit used a free intercept --",
+    "   review glmnet_var_select's own intercept diagnostic (its PDF,",
+    "   page 2) before choosing this rather than leaving it at the",
+    "   default, and use the same choice consistently here.",
     "",
     "2. SER summary (page 2): SER = FH EBLUP RMSE / FIA direct SE, per",
     "   county. SER < 1 means the model-based EBLUP is more precise than",
@@ -289,7 +341,10 @@ handler <- function(joined_data,
     "   should hold for most Virginia counties, especially low-plot-count",
     "   ones where the direct estimate is least reliable. The preview",
     "   tables show the most- and least-improved counties; the full table",
-    "   is in fh_sae_results.csv.",
+    "   is in fh_sae_results.csv. Counties with fia_plot_count_col <=",
+    "   min_plot_count were dropped before fitting (see page 1) since",
+    "   their direct estimates/variances are the least trustworthy inputs",
+    "   to the model.",
     "",
     "3. EBLUP vs. FIA direct estimate (page 3): checks for systematic",
     "   bias in the model-based estimates. Points should scatter evenly",

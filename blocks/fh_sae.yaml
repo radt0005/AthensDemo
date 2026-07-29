@@ -1,5 +1,5 @@
 id: AthensDemo.fh_sae
-version: 0.1.0
+version: 0.1.1
 kind: standard
 network: false
 
@@ -7,10 +7,12 @@ description: >
   Fits an area-level Fay-Herriot small area model (via sae::mseFH()) to
   produce county EBLUPs and their RMSEs from FIA direct estimates/
   variances plus GFCHM canopy-height-bin predictors (e.g. the HT* bins
-  glmnet_var_select identifies as stable). Produces a combined results
-  table (FIA direct stats + FH EBLUP/RMSE + standard-error-ratio) as
-  CSV, and a diagnostic PDF with model summary, SER precision summary,
-  and EBLUP-vs-direct / RMSE%-vs-SE% scatterplots.
+  glmnet_var_select identifies as stable). Counties with unreliably few
+  FIA field plots (fia_plot_count_col <= min_plot_count) are dropped
+  before fitting. Produces a combined results table (FIA direct stats +
+  FH EBLUP/RMSE + standard-error-ratio) as CSV, and a diagnostic PDF
+  with model summary, SER precision summary, and EBLUP-vs-direct /
+  RMSE%-vs-SE% scatterplots.
 
 entrypoint: fh_sae
 
@@ -40,6 +42,20 @@ inputs:
   fia_nonzero_plot_col:
     type: string
     description: Column name in joined_data holding the FIA nonzero-plot count per county (e.g. NON_ZERO_PLOTS -- not currently selected by reformat_fia.R; add it there first if you want this populated).
+  min_plot_count:
+    type: number
+    description: Minimum FIA plot count required for a county to be included in the Fay-Herriot fit. Counties with fia_plot_count_col <= this value (or missing/NA) are dropped before fitting. Default 1 (drops counties with 0 or 1 plots, i.e. unreliable direct estimates). Use the same value here and in glmnet_var_select's min_plot_count so both steps train/fit on the same county set.
+  intercept:
+    type: string
+    description: >
+      Whether to include a free intercept in the Fay-Herriot formula
+      ("TRUE" or "FALSE"). Default "TRUE" for backward compatibility,
+      but review glmnet_var_select's intercept diagnostic (page 2 of
+      its diagnostic PDF) before relying on that default -- if it
+      recommends intercept = FALSE (e.g. the zero-canopy/zero-volume
+      physical justification holds and adding an intercept doesn't
+      meaningfully improve CV-MSE), set this to "FALSE" to fit the
+      matching zero-intercept Fay-Herriot model here.
   method:
     type: string
     description: Variance-component estimation method passed to sae::mseFH() (REML, ML, or FH).

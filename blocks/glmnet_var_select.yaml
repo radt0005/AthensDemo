@@ -1,5 +1,5 @@
 id: AthensDemo.glmnet_var_select
-version: 0.1.1
+version: 0.1.2
 kind: standard
 network: false
 
@@ -12,6 +12,8 @@ description: >
   grid of alpha values, plus cross-validated MSE curves and coefficient
   path plots for each alpha, as an alternative to all-possible-subsets
   regression for identifying informative canopy-height predictors.
+  Counties with unreliably few FIA field plots (fia_plot_count_col <=
+  min_plot_count) are dropped before fitting.
 
 entrypoint: glmnet_var_select
 
@@ -29,6 +31,12 @@ inputs:
   seed:
     type: number
     description: Random seed for reproducible cross-validation fold assignment.
+  fia_plot_count_col:
+    type: string
+    description: Column name in joined_data holding the FIA plot count per county (e.g. PLOT_COUNT). Used only to apply the min_plot_count filter below; if the column isn't present, the filter is skipped (with a message) rather than failing the block.
+  min_plot_count:
+    type: number
+    description: Minimum FIA plot count required for a county to be included in variable selection. Counties with fia_plot_count_col <= this value (or missing/NA) are dropped before fitting. Default 1 (drops counties with 0 or 1 plots, i.e. unreliable direct estimates). Use the same value here and in fh_sae's min_plot_count so both steps train/fit on the same county set.
 
 outputs:
   result:

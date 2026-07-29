@@ -100,6 +100,8 @@ blocks:
       response: "ESTIMATE"
       alphas: "0,0.25,0.5,0.75,1"
       seed: 42
+      fia_plot_count_col: "PLOT_COUNT"
+      min_plot_count: 1
 
   # NOTE: @fh_sae reads joined_data straight from @combined, not from
   # @glmnet_select's output -- glmnet_var_select only produces a PDF
@@ -109,7 +111,13 @@ blocks:
   # spade-philscode-status-3.md (stable predictors: HT0, HT20, HT25,
   # HT30, HT35, with HT25/HT30/HT35 dominant); review @glmnet_select's
   # diagnostic PDF for the current data/run and update this arg by hand
-  # before treating @fh_sae's results as final.
+  # before treating @fh_sae's results as final. The same applies to
+  # `intercept` below: it's set to "FALSE" here to match the
+  # zero-intercept recommendation from that same glmnet diagnostic PDF
+  # (page 2) -- re-check that recommendation still holds whenever you
+  # update `predictors` from a fresh glmnet run, since the intercept
+  # diagnostic and the predictor set come from the same run and can move
+  # together.
   - id: "@fh_sae"
     name: AthensDemo.fh_sae
     inputs:
@@ -119,9 +127,11 @@ blocks:
     args:
       response: "ESTIMATE"
       variance: "VARIANCE"
-      predictors: "HT20,HT25,HT30,HT35"
+      predictors: "HT20, HT25, HT30"
       id_cols: "STATECD,UNITCD,UNITNM,COUNTYCD,CO_FIPS,COUNTY_NAME"
       fia_se_col: "SE"
       fia_plot_count_col: "PLOT_COUNT"
       fia_nonzero_plot_col: "NON_ZERO_PLOTS"
+      min_plot_count: 1
+      intercept: "FALSE"
       method: "REML"
